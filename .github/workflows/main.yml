@@ -11,6 +11,9 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Install CGO build dependencies(gcc + sqlite dev)
+        run: sudo apt‑get update && sudo apt‑get install -y gcc libsqlite3‑dev pkg‑config
+
       - name: Setup Go 1.25
         uses: actions/setup-go@v5
         with:
@@ -23,11 +26,12 @@ jobs:
           ls -la cmd
           ls -la cmd/server
 
-      - name: Compile linux‑amd64 static binary
+      - name: Compile linux‑amd64 binary (CGO ON for sqlite3)
         run: |
-          export CGO_ENABLED=0
+          export CGO_ENABLED=1
           export GOOS=linux
           export GOARCH=amd64
+          export GOPROXY=https://goproxy.cn,direct
           go build -ldflags="-s -w" -o cyberstrike-ai cmd/server/main.go
           ls -lh cyberstrike-ai
 

@@ -1,9 +1,6 @@
 name: Build CyberStrikeAI
-
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
@@ -11,42 +8,32 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
+      - name: Setup Go 1.25
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
 
-    - name: Explore project structure
-      run: |
-        echo "=== 查看项目根目录 ==="
-        ls -la
-        echo ""
-        echo "=== 查看 cmd 目录（如果存在） ==="
-        ls -la cmd/ 2>/dev/null || echo "cmd 目录不存在"
-        echo ""
-        echo "=== 查找所有 .go 文件 ==="
-        find . -name "*.go" -type f | head -20
+      - name: Debug list files
+        run: |
+          pwd
+          ls -la
+          ls -la cmd
+          ls -la cmd/server
 
-    - name: Build
-      run: |
-        # 先尝试最常见的两种构建方式
-        if [ -f "main.go" ]; then
-          echo "发现根目录的 main.go"
-          go build -v -o CyberStrikeAI main.go
-        elif [ -f "cmd/main.go" ]; then
-          echo "发现 cmd/main.go"
-          go build -v -o CyberStrikeAI ./cmd/main.go
-        else
-          echo "尝试直接构建整个项目"
-          go build -v -o CyberStrikeAI .
-        fi
-        ls -la CyberStrikeAI
+      - name: Compile linux‑amd64 static binary
+        run: |
+          export CGO_ENABLED=0
+          export GOOS=linux
+          export GOARCH=amd64
+          go build -ldflags="-s -w" -o cyberstrike-ai cmd/server/main.go
+          ls -lh cyberstrike-ai
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: CyberStrikeAI-linux
-        path: ./CyberStrikeAI
-        if-no-files-found: error
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyberstrike-ai-linux-amd64
+          path: ./cyberstrike-ai
+          if-no-files-found: error
